@@ -27,6 +27,19 @@
 
     const loader = new THREE.TextureLoader();
     const earthTexture = loader.load('textures/image.png');
+    const image = new Image();
+image.crossOrigin = "anonymous";  // pour éviter les problèmes CORS si besoin
+image.src = 'textures/ma-terre-custom.png';  // remplace par le chemin de ta texture perso
+
+const textureCanvas = document.createElement('canvas');
+const ctx = textureCanvas.getContext('2d');
+
+image.onload = () => {
+  textureCanvas.width = image.width;
+  textureCanvas.height = image.height;
+  ctx.drawImage(image, 0, 0);
+};
+
 
     const geometry = new THREE.SphereGeometry(1, 64, 64);
     const material = new THREE.MeshPhongMaterial({ map: earthTexture });
@@ -52,6 +65,25 @@
     // Pour éviter l'affichage du menu contextuel classique
 window.addEventListener('contextmenu', function (e) {
   e.preventDefault();
+  function getColorAtUV(uv) {
+  if (!textureCanvas.width || !textureCanvas.height) return null;
+
+  const x = Math.floor(uv.x * textureCanvas.width);
+  const y = Math.floor((1 - uv.y) * textureCanvas.height); // inversion de y dans la texture
+
+  const pixel = ctx.getImageData(x, y, 1, 1).data;
+  return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
+}
+
+function couleurPresqueEgale(c1, c2, tol = 20) {
+  return Math.abs(c1.r - c2.r) < tol &&
+         Math.abs(c1.g - c2.g) < tol &&
+         Math.abs(c1.b - c2.b) < tol;
+}
+
+const jaune = { r: 255, g: 255, b: 0 };
+const bleu = { r: 0, g: 0, b: 255 };
+
   onRightClick(e);
 });
 
@@ -60,7 +92,6 @@ const mouse = new THREE.Vector2();
 
 // Fonction appelée au clic droit
 function onRightClick(event) {
-  // Position du curseur en coordonnées normalisées (-1 à 1)
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -68,19 +99,34 @@ function onRightClick(event) {
 
   const intersects = raycaster.intersectObject(sphere);
   if (intersects.length > 0) {
-    const point = intersects[0].point;
+    const intersect = intersects[0];
+    const point = intersect.point;
 
-    // Créer un petit point rouge
+    // Récupération des coordonnées UV
+    const uv = intersect.uv;
+
+    // Lire la couleur sur la texture
+    const pixelColor = getColorAtUV(uv);
+    let couleurPoint = 0xff0000; // rouge par défaut
+
+    if (pixelColor) {
+      if (couleurPresqueEgale(pixelColor, jaune)) {
+        couleurPoint = 0xFFFF00; // jaune
+      } else if (couleurPresqueEgale(pixelColor, bleu)) {
+        couleurPoint = 0x0000FF; // bleu
+      }
+    }
+
+    // Créer un petit point avec la couleur choisie
     const dotGeometry = new THREE.SphereGeometry(0.01, 16, 16);
-    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: couleurPoint });
     const dot = new THREE.Mesh(dotGeometry, dotMaterial);
 
-    // Positionner le point relatif à la sphère
     dot.position.copy(sphere.worldToLocal(point.clone()));
-
-    // Ajouter le point comme enfant de la sphère pour qu'il suive sa rotation
     sphere.add(dot);
   }
+}
+
 }
 
   </script>
