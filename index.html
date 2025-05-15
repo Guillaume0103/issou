@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Terre 3D interactive</title>
+  <meta charset="UTF-8">
+  <title>Terre 3D (sans module)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/controls/OrbitControls.js';
+  <!-- Three.js (ancien système non-modulaire) -->
+  <script src="https://unpkg.com/three@0.110.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.110.0/examples/js/controls/OrbitControls.js"></script>
 
+  <script>
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 3);
@@ -22,21 +22,20 @@
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1);
-    scene.add(ambientLight);
+    const light = new THREE.AmbientLight(0xffffff);
+    scene.add(light);
 
-    const textureLoader = new THREE.TextureLoader();
+    const loader = new THREE.TextureLoader();
     const earthTexture = loader.load('https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg');
 
     const geometry = new THREE.SphereGeometry(1, 64, 64);
     const material = new THREE.MeshPhongMaterial({ map: earthTexture });
-    const earthMesh = new THREE.Mesh(geometry, material);
-    scene.add(earthMesh);
+    const sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 0.3;
 
     function animate() {
       requestAnimationFrame(animate);
@@ -50,6 +49,40 @@
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
+    // Pour éviter l'affichage du menu contextuel classique
+window.addEventListener('contextmenu', function (e) {
+  e.preventDefault();
+  onRightClick(e);
+});
+
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+
+// Fonction appelée au clic droit
+function onRightClick(event) {
+  // Position du curseur en coordonnées normalisées (-1 à 1)
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObject(sphere);
+  if (intersects.length > 0) {
+    const point = intersects[0].point;
+
+    // Créer un petit point rouge
+    const dotGeometry = new THREE.SphereGeometry(0.01, 16, 16);
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+
+    // Positionner le point relatif à la sphère
+    dot.position.copy(sphere.worldToLocal(point.clone()));
+
+    // Ajouter le point comme enfant de la sphère pour qu'il suive sa rotation
+    sphere.add(dot);
+  }
+}
+
   </script>
 </body>
 </html>
