@@ -65,31 +65,37 @@
     });
 
     // ➤ Clic gauche : déformer le cercle cliqué
-    window.addEventListener('click', function(event) {
-      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+window.addEventListener('click', function(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
-      raycaster.setFromCamera(mouse, camera);
-      const intersects = raycaster.intersectObjects(circles);
+  raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObjects(circles);
 
-      if (intersects.length > 0) {
-        const selected = intersects[0].object;
-        // Créer une forme organique en modifiant la géométrie
-        const geometry = selected.geometry;
-        const position = geometry.attributes.position;
-        const vertexCount = position.count;
+  if (intersects.length > 0) {
+    const selected = intersects[0].object;
 
-        for (let i = 0; i < vertexCount; i++) {
-          const x = position.getX(i);
-          const y = position.getY(i);
-          const factor = 1 + 0.5 * Math.random(); // déformation aléatoire
-          position.setXY(i, x * factor, y * factor);
-        }
+    // Vérifie que la géométrie et sa position sont valides
+    if (selected.geometry && selected.geometry.attributes && selected.geometry.attributes.position) {
+      const geometry = selected.geometry;
+      const position = geometry.attributes.position;
+      const vertexCount = position.count;
 
-        position.needsUpdate = true;
-        geometry.computeVertexNormals();
+      for (let i = 0; i < vertexCount; i++) {
+        const x = position.getX(i);
+        const y = position.getY(i);
+        const factor = 1 + 0.5 * Math.random(); // effet organique
+        position.setXY(i, x * factor, y * factor);
       }
-    });
+
+      position.needsUpdate = true;
+      geometry.computeVertexNormals();
+    } else {
+      console.warn('Le cercle sélectionné n\'a pas de géométrie valide');
+    }
+  }
+});
+);
 
     function animate() {
       requestAnimationFrame(animate);
