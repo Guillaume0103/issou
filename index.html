@@ -2,54 +2,79 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Terre 3D (sans module)</title>
+  <title>Sphère 3D + Hexagones</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Three.js (ancien système non-modulaire) -->
   <script src="https://unpkg.com/three@0.110.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.110.0/examples/js/controls/OrbitControls.js"></script>
-
   <script>
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // === Initialisation ===
+    const scene    = new THREE.Scene();
+    const camera   = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 0, 3);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
-    const light = new THREE.AmbientLight(0xffffff);
-    scene.add(light);
+    // Lumière
+    scene.add(new THREE.AmbientLight(0xffffff));
 
-    const loader = new THREE.TextureLoader();
-    const earthTexture = loader.load('textures/image.png');
-    const image = new Image();
-image.crossOrigin = "anonymous";  // pour éviter les problèmes CORS si besoin
-image.src = 'textures/ma-terre-custom.png';  // remplace par le chemin de ta texture perso
-
-const textureCanvas = document.createElement('canvas');
-const ctx = textureCanvas.getContext('2d');
-
-image.onload = () => {
-  textureCanvas.width = image.width;
-  textureCanvas.height = image.height;
-  ctx.drawImage(image, 0, 0);
-};
-
-
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
-    const material = new THREE.MeshPhongMaterial({ map: earthTexture });
-    const sphere = new THREE.Mesh(geometry, material);
+    // Sphère
+    const sphereGeo  = new THREE.SphereGeometry(1, 64, 64);
+    const sphereMat  = new THREE.MeshPhongMaterial({ color: 0x3366cc });
+    const sphere     = new THREE.Mesh(sphereGeo, sphereMat);
     scene.add(sphere);
 
+    // Contrôles orbitaux
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
+    // Raycaster & souris
+    const raycaster = new THREE.Raycaster();
+    const mouse     = new THREE.Vector2();
+
+    // Au clic droit : placer un hexagone
+    function onRightClick(event) {
+      event.preventDefault();
+
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+
+      const hits = raycaster.intersectObject(sphere);
+      if (hits.length === 0) return;
+
+      const hit    = hits[0];
+      const P      = hit.point;  
+      // normale surface transformée en repère monde
+      const N      = hit.face.normal.clone().transformDirection(sphere.matrixWorld);
+      
+      // géométrie hexagonale
+      const hexGeo = new THREE.CircleGeometry(0.03, 6);
+      const hexMat = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+      const hex    = new THREE.Mesh(hexGeo, hexMat);
+
+      // orienter selon la normale
+      const upQuat = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1), N
+      );
+      hex.quaternion.copy(upQuat);
+
+      // ajouter à la sphère et position en local
+      sphere.add(hex);
+      const localPos = sphere.worldToLocal(P.clone().add(N.clone().multiplyScalar(0.001)));
+      hex.position.copy(localPos);
+    }
+
+    window.addEventListener('contextmenu', onRightClick);
+
+    // Redessiner
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -57,62 +82,12 @@ image.onload = () => {
     }
     animate();
 
+    // Ajustement à la fenêtre
     window.addEventListener('resize', () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
-    // Pour éviter l'affichage du menu contextuel classique
-window.addEventListener('contextmenu', function (e) {
-  e.preventDefault();
-
-}
-
-
-function onRightClick(event) {
-  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-  raycaster.setFromCamera(mouse, camera);
-
-  const intersects = raycaster.intersectObject(sphere);
-  if (intersects.length > 0) {
-    const intersect = intersects[0];
-    const point = intersect.point;
-    const normal = intersect.face.normal.clone().transformDirection(sphere.matrixWorld);
-
-    const uv = intersect.uv;
-    const pixelColor = getColorAtUV(uv);
-    let couleurPoint = 0xff0000;
-
-    if (pixelColor) {
-      if (couleurPresqueEgale(pixelColor, jaune)) {
-        couleurPoint = 0xFFFF00;
-      } else if (couleurPresqueEgale(pixelColor, bleu)) {
-        couleurPoint = 0x0000FF;
-      }
-    }
-
-    // Créer un petit hexagone (disque à 6 côtés)
-    const hexGeometry = new THREE.CircleGeometry(0.03, 6);
-    const hexMaterial = new THREE.MeshBasicMaterial({ color: couleurPoint, side: THREE.DoubleSide });
-    const hexagon = new THREE.Mesh(hexGeometry, hexMaterial);
-
-    // Positionner l'hexagone sur le point d'intersection
-    hexagon.position.copy(point);
-
-    // Orienter l’hexagone selon la normale à la surface
-    const up = new THREE.Vector3(0, 0, 1);
-    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normal);
-    hexagon.quaternion.copy(quaternion);
-
-    sphere.add(hexagon);
-hexagon.position.copy(sphere.worldToLocal(point.clone()));
-
-  }
-}
-
-
   </script>
 </body>
 </html>
