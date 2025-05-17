@@ -65,32 +65,10 @@ image.onload = () => {
     // Pour éviter l'affichage du menu contextuel classique
 window.addEventListener('contextmenu', function (e) {
   e.preventDefault();
-  function getColorAtUV(uv) {
-  if (!textureCanvas.width || !textureCanvas.height) return null;
 
-  const x = Math.floor(uv.x * textureCanvas.width);
-  const y = Math.floor((1 - uv.y) * textureCanvas.height); // inversion de y dans la texture
-
-  const pixel = ctx.getImageData(x, y, 1, 1).data;
-  return { r: pixel[0], g: pixel[1], b: pixel[2], a: pixel[3] };
 }
 
-function couleurPresqueEgale(c1, c2, tol = 20) {
-  return Math.abs(c1.r - c2.r) < tol &&
-         Math.abs(c1.g - c2.g) < tol &&
-         Math.abs(c1.b - c2.b) < tol;
-}
 
-const jaune = { r: 255, g: 255, b: 0 };
-const bleu = { r: 0, g: 0, b: 255 };
-
-  onRightClick(e);
-});
-
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-
-// Fonction appelée au clic droit
 function onRightClick(event) {
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -101,33 +79,39 @@ function onRightClick(event) {
   if (intersects.length > 0) {
     const intersect = intersects[0];
     const point = intersect.point;
+    const normal = intersect.face.normal.clone().transformDirection(sphere.matrixWorld);
 
-    // Récupération des coordonnées UV
     const uv = intersect.uv;
-
-    // Lire la couleur sur la texture
     const pixelColor = getColorAtUV(uv);
-    let couleurPoint = 0xff0000; // rouge par défaut
+    let couleurPoint = 0xff0000;
 
     if (pixelColor) {
       if (couleurPresqueEgale(pixelColor, jaune)) {
-        couleurPoint = 0xFFFF00; // jaune
+        couleurPoint = 0xFFFF00;
       } else if (couleurPresqueEgale(pixelColor, bleu)) {
-        couleurPoint = 0x0000FF; // bleu
+        couleurPoint = 0x0000FF;
       }
     }
 
-    // Créer un petit point avec la couleur choisie
-    const dotGeometry = new THREE.SphereGeometry(0.01, 16, 16);
-    const dotMaterial = new THREE.MeshBasicMaterial({ color: couleurPoint });
-    const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+    // Créer un petit hexagone (disque à 6 côtés)
+    const hexGeometry = new THREE.CircleGeometry(0.03, 6);
+    const hexMaterial = new THREE.MeshBasicMaterial({ color: couleurPoint, side: THREE.DoubleSide });
+    const hexagon = new THREE.Mesh(hexGeometry, hexMaterial);
 
-    dot.position.copy(sphere.worldToLocal(point.clone()));
-    sphere.add(dot);
+    // Positionner l'hexagone sur le point d'intersection
+    hexagon.position.copy(point);
+
+    // Orienter l’hexagone selon la normale à la surface
+    const up = new THREE.Vector3(0, 0, 1);
+    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, normal);
+    hexagon.quaternion.copy(quaternion);
+
+    sphere.add(hexagon);
+hexagon.position.copy(sphere.worldToLocal(point.clone()));
+
   }
 }
 
-}
 
   </script>
 </body>
