@@ -38,28 +38,32 @@ const circles = []; // Chaque "tâche" sera un objet { mesh, geometry }
 
 function onRightClick(event) {
   event.preventDefault();
-  mouse.x = (event.clientX / innerWidth) * 2 - 1;
-  mouse.y = -(event.clientY / innerHeight) * 2 + 1;
+
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
   raycaster.setFromCamera(mouse, camera);
+  const intersects = raycaster.intersectObject(sphere);
 
-  const hits = raycaster.intersectObject(sphere);
-  if (!hits.length) return;
+  if (intersects.length > 0) {
+    const intersect = intersects[0];
 
-  const hit = hits[0];
-  const P = hit.point;
-  const N = hit.face.normal.clone().transformDirection(sphere.matrixWorld);
+    const circleGeometry = new THREE.CircleGeometry(0.05, 32);
+    const circleMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide });
+    const circle = new THREE.Mesh(circleGeometry, circleMaterial);
 
-  const segments = 64;
-  const radius = 0.03;
-  const geometry = new THREE.CircleGeometry(radius, segments);
-  geometry.userData.originalPositions = geometry.attributes.position.array.slice();
+    // Positionner le cercle à l'endroit du clic
+    circle.position.copy(intersect.point);
 
-  const material = new THREE.MeshBasicMaterial({
-    color: 0xff0000,
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.8
-  });
+    // Aligner le cercle avec la normale de la sphère
+    const normalMatrix = new THREE.Matrix3().getNormalMatrix(sphere.matrixWorld);
+    const normal = intersect.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+    circle.lookAt(circle.position.clone().add(normal));
+
+    scene.add(circle); // ou sphere.add(circle) si tu veux qu'il suive la sphère
+  }
+}
+;
 
   const mesh = new THREE.Mesh(geometry, material);
 
