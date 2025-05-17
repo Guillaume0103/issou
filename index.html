@@ -38,6 +38,7 @@
     // Raycaster & souris
     const raycaster = new THREE.Raycaster();
     const mouse     = new THREE.Vector2();
+    const hexagons = []; // Liste des hexagones placés
 
     // Au clic droit : placer un hexagone
     function onRightClick(event) {
@@ -70,6 +71,9 @@
       sphere.add(hex);
       const localPos = sphere.worldToLocal(P.clone().add(N.clone().multiplyScalar(0.001)));
       hex.position.copy(localPos);
+      hex.position.copy(localPos);
+      hexagons.push(hex); // On garde une référence
+
     }
 
     window.addEventListener('contextmenu', onRightClick);
