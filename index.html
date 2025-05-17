@@ -77,6 +77,8 @@
     }
 
     window.addEventListener('contextmenu', onRightClick);
+    window.addEventListener('click', onLeftClick);
+
 
     // Redessiner
     function animate() {
@@ -91,7 +93,19 @@
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
       renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    })
+    function onLeftClick(event) {
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  const intersects = raycaster.intersectObjects(hexagons);
+  if (intersects.length > 0) {
+    const clickedHex = intersects[0].object;
+    clickedHex.scale.multiplyScalar(1.5); // Augmente la taille
+  }
+}
+;
   </script>
 </body>
 </html>
