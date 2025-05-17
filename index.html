@@ -84,31 +84,44 @@
 
 
   // —— 3. Clic gauche : étendre le cercle sous le pointeur ——
-  function onLeftClick(event) {
-    mouse.x = (event.clientX / innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / innerHeight) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
+function onLeftClick(event) {
+  if (circles.length === 0) return;
 
-    // on teste d’abord sur les cercles  
-    const hits = raycaster.intersectObjects(circles);
-    if (!hits.length) return;
+  mouse.x = (event.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
 
-    const hit    = hits[0];
-    const circle = hit.object;
+  const hits = raycaster.intersectObject(sphere);
+  if (!hits.length) return;
 
-    // repère local du point de clic  
-    const localP = circle.worldToLocal(hit.point);
-    // direction dans le plan du cercle  
-    const dir2D = new THREE.Vector2(localP.x, localP.y).normalize();
-    // facteur d’extension  
-    const factor = 0.5; 
+  const hitPoint = hits[0].point;
 
-    // on applique un scale non-uniform : 
-    // scale.x += factor * dir2D.x  
-    // scale.y += factor * dir2D.y  
-    circle.scale.x += factor * dir2D.x;
-    circle.scale.y += factor * dir2D.y;
+  // Trouver le cercle le plus proche du clic
+  let closestCircle = null;
+  let minDist = Infinity;
+
+  for (const circle of circles) {
+    const worldPos = new THREE.Vector3();
+    circle.getWorldPosition(worldPos);
+    const dist = hitPoint.distanceTo(worldPos);
+    if (dist < minDist) {
+      minDist = dist;
+      closestCircle = circle;
+    }
   }
+
+  if (!closestCircle) return;
+
+  // Transformer le point de clic dans le repère local du cercle
+  const localPoint = closestCircle.worldToLocal(hitPoint.clone());
+  const dir2D = new THREE.Vector2(localPoint.x, localPoint.y).normalize();
+
+  // Étendre le cercle dans cette direction (tâche étirée)
+  const factor = 0.3;
+  closestCircle.scale.x += factor * dir2D.x;
+  closestCircle.scale.y += factor * dir2D.y;
+}
+
 
   window.addEventListener('click', onLeftClick);
 
