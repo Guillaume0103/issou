@@ -1,94 +1,42 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <title>Globe bicolore + Points rouges sur une seule couleur</title>
+  <meta charset="UTF-8">
+  <title>Terre 3D (sans module)</title>
   <style>
     body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
 <body>
-  <!-- Three.js & controls -->
+  <!-- Three.js (ancien système non-modulaire) -->
   <script src="https://unpkg.com/three@0.110.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.110.0/examples/js/controls/OrbitControls.js"></script>
+
   <script>
-    // === initialisation scène / caméra / rendu ===
-    const scene    = new THREE.Scene();
-    const camera   = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);
-    camera.position.set(0,0,3);
-    const renderer = new THREE.WebGLRenderer({antialias:true});
-    renderer.setSize(innerWidth, innerHeight);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
-    scene.add(new THREE.AmbientLight(0xffffff));
+
+    const light = new THREE.AmbientLight(0xffffff);
+    scene.add(light);
+
+    const loader = new THREE.TextureLoader();
+    const earthTexture = loader.load('https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg');
+
+    const geometry = new THREE.SphereGeometry(1, 64, 64);
+    const material = new THREE.MeshPhongMaterial({ map: earthTexture });
+    const sphere = new THREE.Mesh(geometry, material);
+    scene.add(sphere);
+
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
 
-    // === charger et appliquer la texture bicolore ===
-    const textureLoader = new THREE.TextureLoader();
-    const colorTex = textureLoader.load('textures/image.png', () => {
-      // on génère les points une fois la texture chargée
-      generateRedPointsOnOneColor();
-    });
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(1, 64, 64),
-      new THREE.MeshPhongMaterial({ map: colorTex })
-    );
-    scene.add(sphere);
-
-    // === préparer un canvas pour lire les pixels de la texture ===
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = 'textures/bi-couleur.png';
-    const canvas = document.createElement('canvas');
-    const ctx    = canvas.getContext('2d');
-
-    img.onload = () => {
-      canvas.width  = img.width;
-      canvas.height = img.height;
-      ctx.drawImage(img, 0, 0);
-    };
-
-    // === fonction qui génère les points rouges ===
-    function generateRedPointsOnOneColor() {
-      const targetColor = {	r:255, g:153, b:85}; // par exemple, on place que sur le vert (0,255,0)
-      const numPoints   = 200;
-      const positions   = [];
-
-      let attempts = 0;
-      while (positions.length/3 < numPoints && attempts < numPoints*20) {
-        attempts++;
-        // coordonnées sphériques aléatoires
-        const theta = Math.random() * 2*Math.PI;
-        const phi   = Math.acos(2*Math.random() - 1);
-        // uv correspondantes
-        const u = theta / (2*Math.PI);
-        const v = 1 - (phi / Math.PI);
-        // lire pixel
-        const xPx = Math.floor(u * canvas.width);
-        const yPx = Math.floor(v * canvas.height);
-        const p   = ctx.getImageData(xPx, yPx, 1, 1).data;
-        // si pixel == targetColor
-        if (p[0]===targetColor.r && p[1]===targetColor.g && p[2]===targetColor.b) {
-          // position 3D
-          const r = 1.01; // juste au-dessus de la sphère
-          const x = r * Math.sin(phi) * Math.cos(theta);
-          const y = r * Math.cos(phi);
-          const z = r * Math.sin(phi) * Math.sin(theta);
-          positions.push(x,y,z);
-        }
-      }
-
-      // créer le système de points
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-      const mat = new THREE.PointsMaterial({ color:0xff0000, size:0.02 });
-      const pts = new THREE.Points(geo, mat);
-      scene.add(pts);
-    }
-
-    // === boucle d'animation ===
     function animate() {
       requestAnimationFrame(animate);
       controls.update();
@@ -96,11 +44,10 @@
     }
     animate();
 
-    // === ajustement fenêtrage ===
     window.addEventListener('resize', () => {
-      camera.aspect = innerWidth/innerHeight;
+      camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(innerWidth, innerHeight);
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
   </script>
 </body>
