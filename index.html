@@ -13,42 +13,32 @@
   <script src="https://unpkg.com/three@0.110.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.110.0/examples/js/controls/OrbitControls.js"></script>
 
-  <script>
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 0, 3);
+<script>
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 0, 3);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.body.appendChild(renderer.domElement);
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
 
-    const light = new THREE.AmbientLight(0xffffff);
-    scene.add(light);
+  const light = new THREE.AmbientLight(0xffffff);
+  scene.add(light);
 
-    const loader = new THREE.TextureLoader();
-    const earthTexture = loader.load('https://threejs.org/examples/textures/land_ocean_ice_cloud_2048.jpg');
+  const loader = new THREE.TextureLoader();
+  const svgTexture = loader.load('https://raw.githubusercontent.com/Guillaume0103/issou/c5d75b205cc51e2a1e8b3afdf865d4cdabceaaab/textures/nations.svg');
 
-    const geometry = new THREE.SphereGeometry(1, 64, 64);
-    const material = new THREE.MeshPhongMaterial({ map: earthTexture });
-    const sphere = new THREE.Mesh(geometry, material);
-    scene.add(sphere);
+  const geometry = new THREE.SphereGeometry(1, 64, 64);
+  const material = new THREE.MeshPhongMaterial({ map: svgTexture });
+  const sphere = new THREE.Mesh(geometry, material);
+  scene.add(sphere);
 
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-
-    function animate() {
-      requestAnimationFrame(animate);
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    window.addEventListener('resize', () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+  function animate() {
+    requestAnimationFrame(animate);
+    sphere.rotation.y += 0.002;
+    renderer.render(scene, camera);
+  }
+  animate();
+</script>
 </body>
 </html>
