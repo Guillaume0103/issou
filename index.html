@@ -26,7 +26,7 @@
   scene.add(light);
 
   const loader = new THREE.TextureLoader();
-  const svgTexture = loader.load('https://raw.githubusercontent.com/Guillaume0103/issou/c5d75b205cc51e2a1e8b3afdf865d4cdabceaaab/textures/monde.svg');
+  const svgTexture = loader.load('textures/monde.svg');
 
   const geometry = new THREE.SphereGeometry(1, 64, 64);
   const material = new THREE.MeshPhongMaterial({ map: svgTexture });
