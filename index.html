@@ -33,12 +33,6 @@
   const sphere = new THREE.Mesh(geometry, material);
   scene.add(sphere);
 
-  function animate() {
-    requestAnimationFrame(animate);
-    sphere.rotation.y += 0.002;
-    renderer.render(scene, camera);
-  }
-  animate();
       const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;       // pour un mouvement fluide
     controls.dampingFactor = 0.05;
